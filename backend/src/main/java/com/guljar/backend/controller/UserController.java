@@ -1,11 +1,14 @@
 package com.guljar.backend.controller;
 
+import com.guljar.backend.dto.CreateStaffRequest;
 import com.guljar.backend.dto.UserDto;
 import com.guljar.backend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +41,13 @@ public class UserController {
     @Operation(summary = "Get user details by username")
     public ResponseEntity<UserDto> getUserByUsername(@PathVariable String username) {
         return ResponseEntity.ok(userService.getUserByUsername(username));
+    }
+
+    @PostMapping("/create-staff")
+    @Operation(summary = "Create a new staff user account (Admin only)")
+    public ResponseEntity<UserDto> createStaffUser(@Valid @RequestBody CreateStaffRequest request) {
+        UserDto userDto = userService.createStaffUser(request);
+        return new ResponseEntity<>(userDto, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
