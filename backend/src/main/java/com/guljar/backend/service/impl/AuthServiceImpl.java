@@ -1,16 +1,11 @@
 package com.guljar.backend.service.impl;
 
+import com.guljar.backend.dto.ChangePasswordRequest;
 import com.guljar.backend.dto.JwtResponse;
 import com.guljar.backend.dto.LoginRequest;
-import com.guljar.backend.dto.RegisterRequest;
-import com.guljar.backend.dto.UserDto;
-import com.guljar.backend.entity.Role;
-import com.guljar.backend.entity.RoleType;
 import com.guljar.backend.entity.User;
 import com.guljar.backend.exception.BadRequestException;
 import com.guljar.backend.exception.ResourceNotFoundException;
-import com.guljar.backend.mapper.UserMapper;
-import com.guljar.backend.repository.RoleRepository;
 import com.guljar.backend.repository.UserRepository;
 import com.guljar.backend.security.JwtTokenProvider;
 import com.guljar.backend.security.UserPrincipal;
@@ -25,7 +20,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,10 +29,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
-    private final UserMapper userMapper;
 
     @Override
     public JwtResponse authenticateUser(LoginRequest loginRequest) {
@@ -62,31 +54,21 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public UserDto registerUser(RegisterRequest registerRequest) {
-        if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            throw new BadRequestException("Username is already taken!");
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        // Verify current password matches
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadRequestException("Current password is incorrect");
         }
 
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            throw new BadRequestException("Email Address already in use!");
+        // Ensure new password is different from the current one
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new BadRequestException("New password must be different from the current password");
         }
 
-        // Creating user's account
-        User user = User.builder()
-                .username(registerRequest.getUsername())
-                .email(registerRequest.getEmail())
-                .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .firstName(registerRequest.getFirstName())
-                .lastName(registerRequest.getLastName())
-                .isActive(true)
-                .build();
-
-        Role userRole = roleRepository.findByName(RoleType.ROLE_CUSTOMER)
-                .orElseThrow(() -> new ResourceNotFoundException("Role", "name", RoleType.ROLE_CUSTOMER.name()));
-
-        user.setRoles(Collections.singleton(userRole));
-
-        User savedUser = userRepository.save(user);
-        return userMapper.toDto(savedUser);
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 }

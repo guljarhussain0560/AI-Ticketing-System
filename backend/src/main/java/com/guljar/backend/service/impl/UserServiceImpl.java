@@ -1,5 +1,6 @@
 package com.guljar.backend.service.impl;
 
+import com.guljar.backend.dto.CreateStaffRequest;
 import com.guljar.backend.dto.UserDto;
 import com.guljar.backend.entity.Role;
 import com.guljar.backend.entity.RoleType;
@@ -11,9 +12,11 @@ import com.guljar.backend.repository.RoleRepository;
 import com.guljar.backend.repository.UserRepository;
 import com.guljar.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,6 +29,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -53,6 +57,43 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public UserDto createStaffUser(CreateStaffRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new BadRequestException("Username '" + request.getUsername() + "' is already taken!");
+        }
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new BadRequestException("Email '" + request.getEmail() + "' is already in use!");
+        }
+
+        // Parse and validate the role
+        RoleType roleType;
+        try {
+            roleType = RoleType.valueOf(request.getRole());
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Invalid role: " + request.getRole());
+        }
+
+        Role role = roleRepository.findByName(roleType)
+                .orElseThrow(() -> new ResourceNotFoundException("Role", "name", request.getRole()));
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .isActive(true)
+                .build();
+
+        user.setRoles(Collections.singleton(role));
+
+        User savedUser = userRepository.save(user);
+        return userMapper.toDto(savedUser);
+    }
+
+    @Override
+    @Transactional
     public UserDto updateUser(Long id, UserDto userDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
@@ -70,8 +111,8 @@ public class UserServiceImpl implements UserService {
             Set<Role> roles = new HashSet<>();
             for (String roleName : userDto.getRoles()) {
                 try {
-                    RoleType roleType = RoleType.valueOf(roleName);
-                    Role role = roleRepository.findByName(roleType)
+                    RoleType rt = RoleType.valueOf(roleName);
+                    Role role = roleRepository.findByName(rt)
                             .orElseThrow(() -> new ResourceNotFoundException("Role", "name", roleName));
                     roles.add(role);
                 } catch (IllegalArgumentException e) {
