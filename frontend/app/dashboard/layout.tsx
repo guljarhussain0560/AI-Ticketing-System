@@ -17,7 +17,8 @@ import {
   Search,
   Bell,
   Menu,
-  X
+  X,
+  Settings
 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -37,6 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Customers", href: "/dashboard/customers", icon: Users },
     { name: "Departments", href: "/dashboard/departments", icon: Building2 },
     { name: "User Management", href: "/dashboard/users", icon: UserCog, adminOnly: true },
+    { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
   const userRoles = roles || [];

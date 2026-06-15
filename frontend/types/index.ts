@@ -23,3 +23,17 @@ export interface ApiError {
   path: string;
   errors?: Record<string, string>;
 }
+
+export interface CreateStaffRequest {
+  username: string;
+  email: string;
+  password?: string;
+  firstName?: string;
+  lastName?: string;
+  role: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword?: string;
+  newPassword?: string;
+}
