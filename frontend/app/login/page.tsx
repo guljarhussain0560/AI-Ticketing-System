@@ -162,7 +162,7 @@ export default function LoginPage() {
 
         {/* Footer info */}
         <p className="mt-8 text-center text-xs text-slate-600">
-          Secure enterprise connection. Default credentials: <code className="text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded">admin / password</code>
+          Secure enterprise connection. Default credentials: <code className="text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded">admin / admin123</code>
         </p>
       </div>
     </div>
